@@ -78,30 +78,20 @@ def load_model():
     model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
     adapter_path = "aarit-lora-adapter"
     
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.float16
-    )
+    # 1. Load the tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     
-    # 1. Load tokenizer from the BASE model, not the adapter
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_name, 
-        trust_remote_code=True
-    )
-    
+    # 2. Load the base model directly on CPU (no quantization)
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        quantization_config=bnb_config,
-        device_map="auto",
-        torch_dtype=torch.float16,
-        trust_remote_code=True
+        device_map="cpu", # Force CPU
+        torch_dtype=torch.float32 # Use full precision
     )
     
-    # 2. Load the base model, then attach the adapter
+    # 3. Attach the adapter
     model = PeftModel.from_pretrained(base_model, adapter_path)
     model.eval()
     return model, tokenizer
-
 # Show a nice loading message on first run
 with st.spinner("Waking up AaritGPT (this happens only once)..."):
     model, tokenizer = load_model()

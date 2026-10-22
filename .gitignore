@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+content/
+sample_data/
+*.deb
+*.txt
+!requirements.txt
+!packages.txt

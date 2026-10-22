@@ -83,13 +83,21 @@ def load_model():
         bnb_4bit_compute_dtype=torch.float16
     )
     
-    tokenizer = AutoTokenizer.from_pretrained(adapter_path)
+    # 1. Load tokenizer from the BASE model, not the adapter
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name, 
+        trust_remote_code=True
+    )
+    
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
         quantization_config=bnb_config,
         device_map="auto",
-        torch_dtype=torch.float16
+        torch_dtype=torch.float16,
+        trust_remote_code=True
     )
+    
+    # 2. Load the base model, then attach the adapter
     model = PeftModel.from_pretrained(base_model, adapter_path)
     model.eval()
     return model, tokenizer
@@ -127,7 +135,7 @@ if prompt := st.chat_input("Ask AaritGPT anything..."):
         )
         
         # 2. Generate the text
-        messages = [{"role": "system", "content": "You are AaritGPT, a helpful AI created by Aarit."}]
+        messages = [{"role": "system", "content": "U are AaritGPT, a helpful AI created by Aarit."}]
         for msg in st.session_state.messages:
             messages.append(msg)
             
@@ -135,7 +143,7 @@ if prompt := st.chat_input("Ask AaritGPT anything..."):
         inputs = tokenizer(formatted_prompt, return_tensors="pt").to("cuda" if torch.cuda.is_available() else "cpu")
         
         outputs = model.generate(
-            **inputs, max_new_tokens=150, temperature=0.7, 
+            **inputs, max_new_tokens=450, temperature=0.7, 
             top_p=0.9, repetition_penalty=1.15, do_sample=True, 
             pad_token_id=tokenizer.eos_token_id
         )
